@@ -1,0 +1,49 @@
+{
+  "developer": {
+    "name": "郁万祥",
+    "email": "yuwanxiang0114@163.com"
+  },
+  "git": {
+    "platform": "github",
+    "default_branch": "main",
+    "tag_format": "v{version}"
+  },
+  "agent_mode": {
+    "agents_dir": "./agents",
+    "confirm_each_step": true
+  },
+  "repos": {
+    "backend": {
+      "name": "后端",
+      "tech_stack": "spring-boot-mysql",
+      "git_url": "https://github.com/ywx20020114/nku-dev-knowledge-retrieval-manage-backend.git",
+      "local_path": "/path/to/backend-project",
+      "build_tool": "maven",
+      "build_cmd": "mvn package -DskipTests",
+      "test_cmd": "mvn test",
+      "run_cmd": "java -jar target/app.jar --spring.profiles.active=dev",
+      "health_check_url": "http://localhost:8080/actuator/health"
+    },
+    "frontend": {
+      "name": "前端",
+      "tech_stack": "vue3",
+      "git_url": "https://github.com/ywx20020114/your-frontend-project.git",
+      "local_path": "/path/to/frontend-project",
+      "build_tool": "vite",
+      "build_cmd": "npm run build",
+      "test_cmd": "npm run test",
+      "run_cmd": "npm run dev",
+      "health_check_url": "http://localhost:5173"
+    }
+  },
+  "mysql": {
+    "host": "localhost",
+    "port": 3306,
+    "database": "your_database",
+    "username": "root"
+  },
+  "knowledge": {
+    "backend": "../nku-dev-knowledge/docs/backend",
+    "frontend": "../nku-dev-knowledge/docs/frontend"
+  }
+}
