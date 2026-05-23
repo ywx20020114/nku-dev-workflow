@@ -1,40 +1,44 @@
 # nku-dev-workflow — 研发流程编排
 
-面向全栈项目的 AI 驱动研发流程 Skill。7 角色顺序执行，从需求分析到部署上线全自动化，同时读取后端和前端双知识库。
+面向多服务全栈项目的 AI 驱动研发流程 Skill。读取全部服务知识库理解全局上下文，7 角色顺序执行，仅针对**目标服务**开发。
+
+## 核心设计
+
+```
+knowledge_base/              workflow 行为
+├── user-service/     ← 读取（上下文）
+├── order-service/    ← 读取（上下文）  
+├── payment-service/  ← 目标服务！开发+编译+测试+部署只针对它
+└── admin-frontend/   ← 读取（上下文）
+```
+
+- **读全部**：加载所有服务的知识文档，理解全貌和服务间调用关系
+- **改一个**：编译、测试、部署只针对目标服务，其他服务代码不动
 
 ## 核心能力
 
-- **全栈覆盖**：同时支持后端（Spring Boot）和前端（Vue3/React），自动判断需求范围
+- **多服务全栈**：`services` 数组管理 N 个后端服务 + N 个前端项目
+- **全貌感知**：加载全部知识库，Analyst 自动定位目标服务，了解跨服务调用
 - **7 角色流水线**：Analyst → Coder → Compiler → Tester → Reviewer → Deployer → Learner
-- **双知识库驱动**：读取 `nku-dev-knowledge` 产出的后端和前端知识文档，理解全栈上下文
-- **断点续跑**：流程中断后自动从断点恢复，不重复执行
-- **按逻辑单元 commit**：每完成一个分层单元就 commit，PR 可追溯
-- **AI 自查**：Reviewer 检查分层规范、事务、SQL、安全、性能等 7 个维度
+- **目标聚焦**：只对目标服务执行编译/测试/部署，不影响其他服务
+- **断点续跑**：流程中断后自动从断点恢复
 
 ## 目录结构
 
 ```
 nku-dev-workflow/
-├── SKILL.md              # 主 Skill：编排调度 + 双知识库加载
-├── config.json           # 后端/前端仓库 + 构建命令 + 双知识库路径
+├── SKILL.md              # 主 Skill：编排调度 + 目标服务定位
+├── config.json           # services 数组 + knowledge_base 路径
 ├── README.md
-├── agents/               # 7 个子 Agent，各自独立 SKILL.md
-│   ├── analyst/SKILL.md  # ① 需求分析 + 方案设计
-│   ├── coder/SKILL.md    # ② 代码实现
-│   ├── compiler/SKILL.md # ③ 编译验证
-│   ├── tester/SKILL.md   # ④ 测试验证
-│   ├── reviewer/SKILL.md # ⑤ 代码评审
-│   ├── deployer/SKILL.md # ⑥ 部署上线
-│   └── learner/SKILL.md  # ⑦ 经验沉淀
-└── runs/                 # 运行记录（断点续跑用）
-    └── <task-id>/
-        ├── analyst.md
-        ├── coder.md
-        ├── compiler.md
-        ├── tester.md
-        ├── reviewer.md
-        ├── deployer.md
-        └── learner.md
+├── agents/               # 7 个子 Agent
+│   ├── analyst/SKILL.md  # ① 加载全部知识库，定位目标服务，输出改动清单
+│   ├── coder/SKILL.md    # ② 仅对目标服务编码
+│   ├── compiler/SKILL.md # ③ 仅编译目标服务
+│   ├── tester/SKILL.md   # ④ 仅测试目标服务（含联调验证）
+│   ├── reviewer/SKILL.md # ⑤ 评审目标服务 + 跨服务调用检查
+│   ├── deployer/SKILL.md # ⑥ 仅部署目标服务
+│   └── learner/SKILL.md  # ⑦ 仅更新目标服务的知识文档
+└── runs/<task-id>/       # 运行记录
 ```
 
 ## 快速开始
@@ -45,87 +49,59 @@ nku-dev-workflow/
 
 ```json
 {
-  "developer": {
-    "name": "你的名字",
-    "email": "your-email@example.com"
-  },
-  "repos": {
-    "backend": {
-      "local_path": "/path/to/backend-project",
+  "developer": { "name": "你的名字", "email": "your@email.com" },
+  "knowledge_base": "../nku-dev-knowledge/docs",
+  "services": [
+    {
+      "name": "user-service",
+      "type": "backend",
+      "local_path": "/path/to/user-service",
       "build_cmd": "mvn package -DskipTests",
       "test_cmd": "mvn test",
-      "health_check_url": "http://localhost:8080/actuator/health"
+      "health_check_url": "http://localhost:8081/actuator/health"
     },
-    "frontend": {
-      "local_path": "/path/to/frontend-project",
+    {
+      "name": "admin-frontend",
+      "type": "frontend",
+      "local_path": "/path/to/admin-frontend",
       "build_cmd": "npm run build",
       "test_cmd": "npm run test",
       "health_check_url": "http://localhost:5173"
     }
-  },
-  "knowledge": {
-    "backend": "../nku-dev-knowledge/docs/backend",
-    "frontend": "../nku-dev-knowledge/docs/frontend"
-  }
+  ]
 }
 ```
 
 ### 2. 前置条件
 
-确保已通过 `nku-dev-knowledge` 学习完成后端和前端仓库，知识库已有内容。
+确保已通过 `nku-dev-knowledge` 学习所有服务，`knowledge_base/` 下有对应的知识文档。
 
 ### 3. 触发研发
 
-在 Claude Code 中输入：
-
 | 说法 | 效果 |
 |------|------|
-| `帮我实现用户管理 CRUD` | 全栈需求，自动判断涉及后端+前端 |
-| `帮我新增一个导出接口` | 仅后端需求 |
-| `列表页加上筛选功能` | 仅前端需求 |
-| `自动跑完` | 在确认点说，后续步骤跳过确认连续执行 |
+| `帮我在 user-service 中实现 xxx` | 明确目标服务，直接开始 |
+| `帮我实现用户管理 CRUD` | 主 Agent 从知识库自动推断目标服务 |
+| `自动跑完` | 跳过确认连续执行 |
 
-## 流程总览
+## 目标服务定位
 
-```
-用户输入需求
-    ↓
-① Analyst   → 读取双知识库，输出改动清单（区分后端/前端） → ⏸ 确认
-    ↓
-② Coder     → 创建 feature 分支，按分层顺序实现 → 逐单元 commit
-    ↓
-③ Compiler  → 后端 mvn compile + 前端 npm run build → 0 错误
-    ↓
-④ Tester    → 后端 JUnit + 接口验证 + 数据库验证 | 前端 vitest + UI 验证
-    ↓
-⑤ Reviewer  → 后端 7 维度 + 前端 7 维度 AI 自查
-    ↓
-⑥ Deployer  → rebase → merge → tag → 构建部署 → 健康检查 → ⏸ 确认
-    ↓
-⑦ Learner   → 汇总改动 → 分别增量更新后端/前端知识库 → git push
-```
-
-## 需求范围自动判断
-
-| 用户输入特征 | 判断结果 | 加载知识库 | 执行范围 |
-|------------|---------|-----------|---------|
-| 提到接口、数据库、服务端逻辑 | 仅后端 | backend | 后端 Agent |
-| 提到页面、组件、交互、样式 | 仅前端 | frontend | 前端 Agent |
-| 提到完整功能（CRUD、管理页面等） | 全栈 | 两个 | 全部 Agent |
-
-## 断点续跑
-
-流程中断后重新启动，主 Agent 检查 `runs/<task-id>/` 目录下的产出文件，从第一个不存在的文件对应的角色继续执行。
+| 需求特征 | 定位方式 |
+|---------|---------|
+| 用户明确指定了 service | 直接使用 |
+| 提到某个服务的 Entity/表 | 该服务即为目标 |
+| 提到某接口路径 | 查找哪个 Controller 暴露了该路径 |
+| 无法判断 | 列出候选服务，询问用户 |
+| 涉及多个后端服务 | 提示拆分需求，一次只改一个 |
 
 ## 与 nku-dev-knowledge 的关系
 
 ```
-nku-dev-knowledge (学习)          nku-dev-workflow (执行)
-        │                                │
-        │  产出知识文档                    │  读取知识文档
-        │  docs/backend/  ──────────────→ │  理解后端架构
-        │  docs/frontend/ ──────────────→ │  理解前端架构
-        │                                │
-        │  ⑦ Learner 调用增量更新 ←────── │  沉淀经验
-        │  更新知识库                      │
+nku-dev-knowledge (学习)            nku-dev-workflow (执行)
+        │                                  │
+        │  docs/user-service/ ──────────→  │  读取（理解 user-service）
+        │  docs/order-service/ ─────────→  │  读取（理解上下游接口）
+        │  docs/admin-frontend/ ────────→  │  读取（理解前端架构）
+        │                                  │
+        │  ⑦ Learner 调用增量更新 ←────────  │  只更新目标服务的文档
 ```

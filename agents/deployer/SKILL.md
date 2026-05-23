@@ -1,6 +1,6 @@
 ---
 name: deployer
-description: 部署上线。后端 rebase → merge → tag → jar 部署 → 健康检查，前端 rebase → merge → tag → 构建 → 部署静态资源。失败回滚。
+description: 部署上线。仅部署目标服务。rebase → merge → tag → 构建 → 部署 → 健康检查。失败回滚。
 ---
 
 # ⑥ Deployer — 部署上线
@@ -8,68 +8,61 @@ description: 部署上线。后端 rebase → merge → tag → jar 部署 → �
 ## 输入
 
 由主 Agent 传入：
-- 评审通过确认（reviewer.md）
-- `config.json` → `repos`（部署命令和健康检查 URL）
+- 目标服务信息：name、type、local_path、构建命令、health_check_url
 - 版本号
 
 ## 执行步骤
 
-### 1. 后端部署（如涉及后端改动）
+### 1. 合并与打 tag（仅目标服务）
 
 ```bash
-cd <backend_repo>
+cd <目标服务 local_path>
 git checkout main && git pull origin main
 git checkout feature/<功能>
 git rebase main
 git checkout main
 git merge feature/<功能> --no-ff
 git tag -a v<version> -m "Release v<version>: <功能描述>"
+```
+
+### 2. 构建与部署
+
+**type=backend**：
+```bash
 mvn package -DskipTests
+# 部署 jar → 重启服务
 ```
 
-部署 jar 包到服务器，重启服务。
-
-健康检查：
+**type=frontend**：
 ```bash
-curl -s http://<host>:<port>/actuator/health
-# 预期: {"status":"UP"}
-```
-
-### 2. 前端部署（如涉及前端改动）
-
-```bash
-cd <frontend_repo>
-git checkout main && git pull origin main
-git checkout feature/<功能>
-git rebase main
-git checkout main
-git merge feature/<功能> --no-ff
-git tag -a v<version> -m "Release v<version>: <功能描述>"
 npm run build
+# 部署 dist/ → 服务器/CDN/OSS
 ```
 
-部署 `dist/` 目录到服务器 / CDN / OSS。
+### 3. 健康检查
 
-健康检查：
 ```bash
-curl -s http://<frontend_url>
-# 预期: 200 OK，页面正常渲染
+curl -s <health_check_url>
+# 预期: {"status":"UP"} 或 200 OK
 ```
 
-### 3. 推送
+等待 3-5 秒后再次检查确认稳定。
+
+### 4. 推送
 
 ```bash
-# 后端和前端分别
 git push origin main
 git push origin --tags
 ```
 
 ## 失败处理
 
-部署失败或健康检查不通过时：
-1. 回滚到合并前状态
-2. 报告具体错误
-3. 等待用户决策
+部署失败或健康检查不通过时，回滚并报告具体错误。
+
+## 关键约束
+
+- **只部署目标服务**，其他服务不受影响
+- 部署前确认目标服务不依赖本次未部署的其他服务变更
 
 ## 产出格式
 
@@ -78,22 +71,20 @@ git push origin --tags
 ```markdown
 # 部署报告
 
-## 版本信息
+## 目标服务: <service-name>
 - Tag: v<version>
-- 发布时间: <时间>
 
-## 后端部署（如有）
+## 合并
 - Merge Commit: <hash>
-- 构建: ✅/❌
-- 部署: ✅/❌
-- 健康检查: ✅/❌
+- 状态: ✅ / ❌
 
-## 前端部署（如有）
-- Merge Commit: <hash>
-- 构建: ✅/❌
-- 部署: ✅/❌
-- 健康检查: ✅/❌
+## 构建与部署
+- 状态: ✅ / ❌
+
+## 健康检查
+- URL: <url>
+- 响应: <body>
+- 状态: ✅ / ❌
 
 ## 结论
-- 状态: ✅ 全部成功 / ❌ 存在失败（已回滚）
 ```

@@ -12,38 +12,48 @@
     "agents_dir": "./agents",
     "confirm_each_step": true
   },
-  "repos": {
-    "backend": {
-      "name": "后端",
-      "tech_stack": "spring-boot-mysql",
+  "knowledge_base": "../nku-dev-knowledge/docs",
+  "services": [
+    {
+      "name": "knowledge-retrieval-manage-backend",
+      "type": "backend",
+      "description": "知识检索管理后端服务",
       "git_url": "https://github.com/ywx20020114/nku-dev-knowledge-retrieval-manage-backend.git",
-      "local_path": "/path/to/backend-project",
+      "local_path": "/path/to/knowledge-retrieval-manage-backend",
+      "tech_stack": "spring-boot-mysql",
       "build_tool": "maven",
       "build_cmd": "mvn package -DskipTests",
       "test_cmd": "mvn test",
       "run_cmd": "java -jar target/app.jar --spring.profiles.active=dev",
-      "health_check_url": "http://localhost:8080/actuator/health"
+      "health_check_url": "http://localhost:8080/actuator/health",
+      "database": "knowledge_db"
     },
-    "frontend": {
-      "name": "前端",
+    {
+      "name": "another-backend-service",
+      "type": "backend",
+      "description": "另一个后端服务（示例）",
+      "git_url": "https://github.com/ywx20020114/another-backend-service.git",
+      "local_path": "/path/to/another-backend-service",
+      "tech_stack": "spring-boot-mysql",
+      "build_tool": "maven",
+      "build_cmd": "mvn package -DskipTests",
+      "test_cmd": "mvn test",
+      "run_cmd": "java -jar target/app.jar --spring.profiles.active=dev",
+      "health_check_url": "http://localhost:8081/actuator/health",
+      "database": "another_db"
+    },
+    {
+      "name": "admin-frontend",
+      "type": "frontend",
+      "description": "管理后台前端",
+      "git_url": "https://github.com/ywx20020114/admin-frontend.git",
+      "local_path": "/path/to/admin-frontend",
       "tech_stack": "vue3",
-      "git_url": "https://github.com/ywx20020114/your-frontend-project.git",
-      "local_path": "/path/to/frontend-project",
       "build_tool": "vite",
       "build_cmd": "npm run build",
       "test_cmd": "npm run test",
       "run_cmd": "npm run dev",
       "health_check_url": "http://localhost:5173"
     }
-  },
-  "mysql": {
-    "host": "localhost",
-    "port": 3306,
-    "database": "your_database",
-    "username": "root"
-  },
-  "knowledge": {
-    "backend": "../nku-dev-knowledge/docs/backend",
-    "frontend": "../nku-dev-knowledge/docs/frontend"
-  }
+  ]
 }

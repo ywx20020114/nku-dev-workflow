@@ -1,6 +1,6 @@
 ---
 name: learner
-description: 经验沉淀。汇总本次全栈改动，按后端/前端分别增量更新对应的知识库，git commit + push 保持知识库同步。
+description: 经验沉淀。仅更新目标服务的知识文档，增量更新后 git commit + push。
 ---
 
 # ⑦ Learner — 经验沉淀
@@ -8,62 +8,59 @@ description: 经验沉淀。汇总本次全栈改动，按后端/前端分别增
 ## 输入
 
 由主 Agent 传入：
-- 部署成功确认（deployer.md）
-- 本次流程全部产出文档 + 双知识库文档路径
+- 目标服务名称
+- 本次流程全部产出文档
+- 知识库根目录（`knowledge_base`）
 
 ## 执行步骤
 
-### 1. 汇总本次改动
+### 1. 汇总目标服务的改动
 
-从 `analyst.md` 和 `coder.md` 提取，**区分后端和前端**：
-
-**后端改动**：
-- 新增/修改的 Controller / Service / Mapper / Entity
+从 `analyst.md` 和 `coder.md` 提取目标服务的改动：
+- 新增/修改的 Controller / Service / Mapper / Entity（后端）
+- 新增/修改的 Pages / Components / Store / API / Router（前端）
 - 新增/修改的表结构
 
-**前端改动**：
-- 新增/修改的 Pages / Components / Store / API / Router
-- 新增的依赖或配置变更
+### 2. 增量更新目标服务的知识文档
 
-### 2. 增量更新知识库
+只更新 `knowledge_base/<目标服务名>/` 下的文档。
 
-按 `nku-dev-knowledge` 的增量更新规则，**分别更新后端和前端知识库**：
+按 nku-dev-knowledge 增量更新规则：
 
-**后端知识库更新**（`docs/backend/`）：
+**type=backend**：
+| 改动涉及 | 更新文档 |
+|---------|---------|
+| Controller 变更 | `_overview.md` + `modules/controller.md` |
+| Service 变更 | `modules/service.md` |
+| Mapper 变更 | `modules/mapper.md` |
+| Entity / 表变更 | `_overview.md` + `modules/entity.md` |
+| 配置变更 | `server.md` + `modules/config.md` |
 
-| 本次改动涉及 | 更新文档 |
-|------------|---------|
-| 新增/删除 Controller | `_overview.md` + `modules/controller.md` |
-| 新增/删除 Service | `modules/service.md` |
-| 新增/删除 Mapper | `modules/mapper.md` |
-| 新增/删除 Entity / 表结构变更 | `_overview.md` + `modules/entity.md` |
-| pom.xml / application.yml 变更 | `server.md` |
-| Config 类变更 | `modules/config.md` |
-
-**前端知识库更新**（`docs/frontend/`）：
-
-| 本次改动涉及 | 更新文档 |
-|------------|---------|
-| 新增/删除页面 | `_overview.md` + `modules/pages.md` |
-| 新增/删除路由 | `_overview.md` + `modules/router.md` |
-| 新增/删除组件 | `modules/components.md` |
+**type=frontend**：
+| 改动涉及 | 更新文档 |
+|---------|---------|
+| Pages/Router 变更 | `_overview.md` + `modules/pages.md` + `modules/router.md` |
+| Components 变更 | `modules/components.md` |
 | Store 变更 | `modules/store.md` |
-| API 函数变更 | `modules/api.md` |
-| 工具函数变更 | `modules/utils.md` |
-| package.json / 配置变更 | `server.md` |
+| API 变更 | `modules/api.md` |
+| 构建配置变更 | `server.md` |
+| Utils 变更 | `modules/utils.md` |
+
+**特别关注**：如果目标服务新增/修改了对外接口（可能被其他服务调用），在 `_overview.md` 中明确标注，方便后续其他服务的开发参考。
 
 ### 3. 推送知识库
 
 ```bash
 cd <nku-dev-knowledge 目录>
-git add docs/backend/ docs/frontend/
-git commit -m "docs: 增量更新 — <功能描述>"
+git add docs/<目标服务名>/
+git commit -m "docs: 增量更新 <目标服务名> — <功能描述>"
 git push origin main
 ```
 
-## 失败处理
+## 关键约束
 
-git push 失败时，先 `git pull --rebase` 尝试自动合并，仍失败则保留本地 commit，提示用户手动处理。
+- **只更新目标服务的知识文档**，其他服务文档不动
+- 如果本次改动影响了其他服务（如接口签名变更），在 commit message 中注明
 
 ## 产出格式
 
@@ -72,25 +69,18 @@ git push 失败时，先 `git pull --rebase` 尝试自动合并，仍失败则�
 ```markdown
 # 经验沉淀报告
 
-## 本次改动总结
+## 目标服务: <service-name>
 
-### 后端改动
+## 改动总结
 | 分层 | 文件 | 改动类型 | 说明 |
 |------|------|---------|------|
 
-### 前端改动
-| 分层 | 文件 | 改动类型 | 说明 |
-|------|------|---------|------|
-
-## 知识库更新记录
-
-### 后端知识库
+## 知识库更新
 | 文档 | 更新类型 | 内容摘要 |
 |------|---------|---------|
 
-### 前端知识库
-| 文档 | 更新类型 | 内容摘要 |
-|------|---------|---------|
+## 对其他服务的影响提示
+<!-- 如有接口变更影响其他服务，在此记录 -->
 
 ## 推送状态
 - 状态: ✅ / ⚠️
